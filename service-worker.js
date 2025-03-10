@@ -1,17 +1,17 @@
 const CACHE_NAME = 'pretzeldaily-app-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/firebase-config.js',
-  '/images/pretzel.png',
-  '/images/ate.png',
-  '/images/peed.png',
-  '/images/pood.png',
-  '/images/ran.png',
-  '/images/pretzel-icon-192.png',
-  '/images/pretzel-icon-512.png'
+  './',
+  './index.html',
+  './styles.css',
+  './app.js',
+  './firebase-config.js',
+  './images/pretzel.png',
+  './images/ate.png',
+  './images/peed.png',
+  './images/pood.png',
+  './images/ran.png',
+  './images/pretzel-icon-192.png',
+  './images/pretzel-icon-512.png'
 ];
 
 // Install event
