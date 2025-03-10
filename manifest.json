@@ -2,7 +2,7 @@
     "name": "PretzelDaily",
     "short_name": "PretzelDaily",
     "description": "Track your dog Pretzel's daily activities",
-    "start_url": "/index.html",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#f9e076",
     "theme_color": "#f9e076",
