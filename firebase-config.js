@@ -1,17 +1,15 @@
-// Your Firebase configuration
-// Replace with your actual Firebase project credentials
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  
-  // Initialize Firebase
-  if (typeof firebase !== 'undefined') {
-    firebase.initializeApp(firebaseConfig);
-  } else {
-    console.warn('Firebase SDK not loaded. Using local storage fallback.');
-  }
+  apiKey: "AIzaSyBgtiM3ER1pkDQEaM1jGqtnQxZqqW6gJ4o",
+  authDomain: "pretzeldaily-c340a.firebaseapp.com",
+  projectId: "pretzeldaily-c340a",
+  storageBucket: "pretzeldaily-c340a.firebasestorage.app",
+  messagingSenderId: "754918040979",
+  appId: "1:754918040979:web:a3fdf590f0cd349e433466",
+  measurementId: "G-QLLN5XE6R5"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);

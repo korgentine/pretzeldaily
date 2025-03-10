@@ -194,13 +194,15 @@ function updateLogsDisplay() {
     }
 }
 
-// Firebase functions
+// Firebase functions for Realtime Database
 function saveLogToFirebase(logEntry) {
-    if (typeof firebase !== 'undefined' && firebase.firestore) {
-        const db = firebase.firestore();
-        db.collection('pretzelLogs').add({
+    if (typeof firebase !== 'undefined' && firebase.database) {
+        const db = firebase.database();
+        const newLogRef = db.ref('pretzelLogs').push();
+        
+        newLogRef.set({
             ...logEntry,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: firebase.database.ServerValue.TIMESTAMP
         })
         .then(() => {
             console.log('Log saved to Firebase');
@@ -220,16 +222,16 @@ function loadTodayLogs() {
     const today = formatDateForStorage(new Date());
     
     // Try to load from Firebase
-    if (typeof firebase !== 'undefined' && firebase.firestore) {
-        const db = firebase.firestore();
-        db.collection('pretzelLogs')
-            .where('dateString', '==', today)
-            .orderBy('timestamp', 'asc')
-            .get()
-            .then(querySnapshot => {
+    if (typeof firebase !== 'undefined' && firebase.database) {
+        const db = firebase.database();
+        db.ref('pretzelLogs')
+            .orderByChild('dateString')
+            .equalTo(today)
+            .once('value')
+            .then(snapshot => {
                 todayLogs = [];
-                querySnapshot.forEach(doc => {
-                    todayLogs.push(doc.data());
+                snapshot.forEach(childSnapshot => {
+                    todayLogs.push(childSnapshot.val());
                 });
                 updateLogsDisplay();
             })
