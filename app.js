@@ -158,9 +158,10 @@ function updateLogsDisplay() {
         emptyStateElement.style.display = 'none';
         
         // Add each log entry
-        sortedLogs.forEach(log => {
+        sortedLogs.forEach((log, index) => {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
+            logEntry.dataset.index = index;
             
             const timePersonContainer = document.createElement('div');
             timePersonContainer.className = 'log-time-person';
@@ -186,23 +187,65 @@ function updateLogsDisplay() {
                 activitiesElement.appendChild(activityIcon);
             });
             
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.innerHTML = '&times;';
+            deleteButton.addEventListener('click', () => deleteLogEntry(index));
+            
             logEntry.appendChild(timePersonContainer);
             logEntry.appendChild(activitiesElement);
+            logEntry.appendChild(deleteButton);
             
             activitiesLogElement.appendChild(logEntry);
         });
     }
 }
 
-// Firebase functions for Realtime Database
+// Delete a log entry
+function deleteLogEntry(index) {
+    const logEntryToDelete = todayLogs[index];
+    
+    // Remove from local array
+    todayLogs.splice(index, 1);
+    
+    // Delete from Firebase
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+        const db = firebase.firestore();
+        db.collection('pretzelLogs')
+            .where('timestamp', '==', logEntryToDelete.timestamp)
+            .where('person', '==', logEntryToDelete.person)
+            .limit(1)
+            .get()
+            .then(querySnapshot => {
+                querySnapshot.forEach(doc => {
+                    doc.ref.delete()
+                        .then(() => {
+                            console.log('Log deleted from Firebase');
+                        })
+                        .catch(error => {
+                            console.error('Error deleting log from Firebase:', error);
+                        });
+                });
+            })
+            .catch(error => {
+                console.error('Error finding log to delete:', error);
+            });
+    } else {
+        // Update local storage if Firebase is not available
+        saveFallbackLogs();
+    }
+    
+    // Update UI
+    updateLogsDisplay();
+}
+
+// Firebase functions
 function saveLogToFirebase(logEntry) {
-    if (typeof firebase !== 'undefined' && firebase.database) {
-        const db = firebase.database();
-        const newLogRef = db.ref('pretzelLogs').push();
-        
-        newLogRef.set({
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+        const db = firebase.firestore();
+        db.collection('pretzelLogs').add({
             ...logEntry,
-            createdAt: firebase.database.ServerValue.TIMESTAMP
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         })
         .then(() => {
             console.log('Log saved to Firebase');
@@ -222,16 +265,16 @@ function loadTodayLogs() {
     const today = formatDateForStorage(new Date());
     
     // Try to load from Firebase
-    if (typeof firebase !== 'undefined' && firebase.database) {
-        const db = firebase.database();
-        db.ref('pretzelLogs')
-            .orderByChild('dateString')
-            .equalTo(today)
-            .once('value')
-            .then(snapshot => {
+    if (typeof firebase !== 'undefined' && firebase.firestore) {
+        const db = firebase.firestore();
+        db.collection('pretzelLogs')
+            .where('dateString', '==', today)
+            .orderBy('timestamp', 'asc')
+            .get()
+            .then(querySnapshot => {
                 todayLogs = [];
-                snapshot.forEach(childSnapshot => {
-                    todayLogs.push(childSnapshot.val());
+                querySnapshot.forEach(doc => {
+                    todayLogs.push(doc.data());
                 });
                 updateLogsDisplay();
             })

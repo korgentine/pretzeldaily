@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#f9e076">
-    <title>PretzelDaily</title>
+    <meta name="theme-color" content="#FAE34C">
+    <title>Pretzel's Day</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Krona+One&display=swap" rel="stylesheet">
@@ -16,59 +16,63 @@
 <body>
     <div class="container">
         <header>
-            <h1>PRETZELDAILY</h1>
+            <h1>PRETZEL'S DAY</h1>
             <div class="heart"></div>
             <div class="pretzel-image"></div>
         </header>
         
         <div class="content">
-            <div class="date-container">
-                <div id="date"></div>
-            </div>
-            
-            <div class="activities-log" id="activities-log">
-                <div class="empty-state" id="empty-state">
-                    Pretzel hasn't done any activities yet!
-                </div>
-                <!-- Activity logs will be added here dynamically -->
-            </div>
-            
-            <div class="input-section">
-                <div class="person-selector">
-                    <select id="person-select">
-                        <option value="ALE">ALE</option>
-                        <option value="DENU">DENU</option>
-                    </select>
+            <div class="top-content">
+                <div class="date-container">
+                    <div id="date"></div>
                 </div>
                 
-                <div class="activity-buttons">
-                    <div class="activity-button" data-activity="ate">
-                        <div class="activity-icon ate-icon"></div>
-                        <span>ATE</span>
+                <div class="activities-log" id="activities-log">
+                    <div class="empty-state" id="empty-state">
+                        Pretzel hasn't done any activities yet!
                     </div>
-                    <div class="activity-button" data-activity="peed">
-                        <div class="activity-icon peed-icon"></div>
-                        <span>PEED</span>
-                    </div>
-                    <div class="activity-button" data-activity="pood">
-                        <div class="activity-icon pood-icon"></div>
-                        <span>POO'D</span>
-                    </div>
-                    <div class="activity-button" data-activity="ran">
-                        <div class="activity-icon ran-icon"></div>
-                        <span>RAN</span>
-                    </div>
+                    <!-- Activity logs will be added here dynamically -->
                 </div>
-                
-                <button id="log-button" class="log-button">LOG</button>
+            </div>
+            
+            <div class="bottom-content">
+                <div class="input-section">
+                    <div class="person-selector">
+                        <select id="person-select">
+                            <option value="ALE">ALE</option>
+                            <option value="DENU">DENU</option>
+                        </select>
+                    </div>
+                    
+                    <div class="activity-buttons">
+                        <div class="activity-button" data-activity="ate">
+                            <div class="activity-icon ate-icon"></div>
+                            <span>ATE</span>
+                        </div>
+                        <div class="activity-button" data-activity="peed">
+                            <div class="activity-icon peed-icon"></div>
+                            <span>PEED</span>
+                        </div>
+                        <div class="activity-button" data-activity="pood">
+                            <div class="activity-icon pood-icon"></div>
+                            <span>POO'D</span>
+                        </div>
+                        <div class="activity-button" data-activity="ran">
+                            <div class="activity-icon ran-icon"></div>
+                            <span>RAN</span>
+                        </div>
+                    </div>
+                    
+                    <button id="log-button" class="log-button">LOG</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <script src="app.js"></script>
     <!-- Firebase setup -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="firebase-config.js"></script>
-    <script src="app.js"></script>
 </body>
 </html>
