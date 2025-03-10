@@ -11,4 +11,14 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    console.log('Firebase initialized successfully');
+  } else {
+    console.warn('Firebase SDK not loaded. Using local storage fallback.');
+  }
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+  console.warn('Using local storage fallback due to Firebase initialization error.');
+}

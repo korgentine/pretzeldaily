@@ -53,18 +53,21 @@ function init() {
         localStorage.setItem(`${deviceId}_selectedPerson`, personSelectElement.value);
     });
     
-    // Load today's logs from Firebase
+    // Load today's logs from Firebase or local storage
     loadTodayLogs();
     
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('service-worker.js')
             .then(reg => console.log('Service Worker registered', reg))
             .catch(err => console.log('Service Worker registration failed', err));
     }
     
     // Set up midnight refresh
     setupMidnightRefresh();
+    
+    // Disable log button initially
+    logButton.disabled = true;
 }
 
 // Generate a simple device ID
@@ -119,6 +122,9 @@ function logActivities() {
     // Save to Firebase
     saveLogToFirebase(logEntry);
     
+    // Always save to local storage as a backup
+    saveFallbackLogs();
+    
     // Update UI
     updateLogsDisplay();
     
@@ -142,7 +148,7 @@ function resetActivitySelection() {
 
 // Update the logs display
 function updateLogsDisplay() {
-    // Sort logs by timestamp (newest first)
+    // Sort logs by timestamp (oldest first)
     const sortedLogs = [...todayLogs].sort((a, b) => a.timestamp - b.timestamp);
     
     // Clear current logs
@@ -230,10 +236,10 @@ function deleteLogEntry(index) {
             .catch(error => {
                 console.error('Error finding log to delete:', error);
             });
-    } else {
-        // Update local storage if Firebase is not available
-        saveFallbackLogs();
     }
+    
+    // Always update local storage
+    saveFallbackLogs();
     
     // Update UI
     updateLogsDisplay();
@@ -242,63 +248,80 @@ function deleteLogEntry(index) {
 // Firebase functions
 function saveLogToFirebase(logEntry) {
     if (typeof firebase !== 'undefined' && firebase.firestore) {
-        const db = firebase.firestore();
-        db.collection('pretzelLogs').add({
-            ...logEntry,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        })
-        .then(() => {
-            console.log('Log saved to Firebase');
-        })
-        .catch(error => {
-            console.error('Error saving log to Firebase:', error);
-            // Store locally if Firebase fails
-            saveFallbackLogs();
-        });
+        try {
+            const db = firebase.firestore();
+            db.collection('pretzelLogs').add({
+                ...logEntry,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                console.log('Log saved to Firebase');
+            })
+            .catch(error => {
+                console.error('Error saving log to Firebase:', error);
+            });
+        } catch (error) {
+            console.error('Firebase error:', error);
+        }
     } else {
-        // If Firebase is not available, store locally
-        saveFallbackLogs();
+        console.log('Firebase not available, using local storage only');
     }
 }
 
 function loadTodayLogs() {
     const today = formatDateForStorage(new Date());
     
-    // Try to load from Firebase
+    // First try to load from local storage as a backup
+    loadFallbackLogs();
+    
+    // Then try to load from Firebase if available
     if (typeof firebase !== 'undefined' && firebase.firestore) {
-        const db = firebase.firestore();
-        db.collection('pretzelLogs')
-            .where('dateString', '==', today)
-            .orderBy('timestamp', 'asc')
-            .get()
-            .then(querySnapshot => {
-                todayLogs = [];
-                querySnapshot.forEach(doc => {
-                    todayLogs.push(doc.data());
+        try {
+            const db = firebase.firestore();
+            db.collection('pretzelLogs')
+                .where('dateString', '==', today)
+                .orderBy('timestamp', 'asc')
+                .get()
+                .then(querySnapshot => {
+                    // Only replace local logs if Firebase has data
+                    if (!querySnapshot.empty) {
+                        todayLogs = [];
+                        querySnapshot.forEach(doc => {
+                            todayLogs.push(doc.data());
+                        });
+                        // Update local storage with Firebase data
+                        saveFallbackLogs();
+                        updateLogsDisplay();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading logs from Firebase:', error);
                 });
-                updateLogsDisplay();
-            })
-            .catch(error => {
-                console.error('Error loading logs from Firebase:', error);
-                // Load from local storage if Firebase fails
-                loadFallbackLogs();
-            });
-    } else {
-        // If Firebase is not available, load from local storage
-        loadFallbackLogs();
+        } catch (error) {
+            console.error('Firebase error:', error);
+        }
     }
 }
 
 // Local storage fallback functions
 function saveFallbackLogs() {
-    localStorage.setItem('pretzelLogs_' + formatDateForStorage(new Date()), JSON.stringify(todayLogs));
+    const storageKey = 'pretzelLogs_' + formatDateForStorage(new Date());
+    localStorage.setItem(storageKey, JSON.stringify(todayLogs));
+    console.log('Saved to local storage:', storageKey, todayLogs.length, 'entries');
 }
 
 function loadFallbackLogs() {
-    const saved = localStorage.getItem('pretzelLogs_' + formatDateForStorage(new Date()));
+    const storageKey = 'pretzelLogs_' + formatDateForStorage(new Date());
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
-        todayLogs = JSON.parse(saved);
-        updateLogsDisplay();
+        try {
+            todayLogs = JSON.parse(saved);
+            console.log('Loaded from local storage:', storageKey, todayLogs.length, 'entries');
+            updateLogsDisplay();
+        } catch (error) {
+            console.error('Error parsing stored logs:', error);
+            todayLogs = [];
+        }
     }
 }
 
