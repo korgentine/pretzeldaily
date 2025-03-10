@@ -169,7 +169,6 @@ h1 {
     background-repeat: no-repeat;
     background-position: center;
     background-color: white;
-    background-color: white;
     border-radius: 8px;
     padding: 5px;
 }
@@ -231,6 +230,11 @@ select {
     background-color: white;
     border-radius: 10px;
     padding: 10px 5px;
+    background-color: #f9e076;
+    border-radius: 15px;  /* increased rounded corners */
+    width: 85px;         /* increased width */
+    height: 85px;        /* increased height */
+    margin: 8px;
 }
 
 .activity-button.selected {

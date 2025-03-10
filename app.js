@@ -11,7 +11,6 @@ let selectedActivities = [];
 let todayLogs = [];
 let currentDate = new Date();
 let deviceId = null;
-let firebaseListener = null; // Track the Firebase listener
 
 // Activity icons for logs
 const activityIcons = {
@@ -23,6 +22,9 @@ const activityIcons = {
 
 // Initialize the application
 function init() {
+    // Debug message to confirm initialization
+    console.log('App initializing...');
+    
     // Set up the date
     updateDateDisplay();
     
@@ -32,6 +34,7 @@ function init() {
         deviceId = generateDeviceId();
         localStorage.setItem('pretzelDayDeviceId', deviceId);
     }
+    console.log('Device ID:', deviceId);
     
     // Load the person preference from local storage
     const savedPerson = localStorage.getItem(`${deviceId}_selectedPerson`);
@@ -54,24 +57,31 @@ function init() {
         localStorage.setItem(`${deviceId}_selectedPerson`, personSelectElement.value);
     });
     
-    // Set up Firebase real-time listener
-    setupFirebaseListener();
-    
-    // Also load from local storage as a backup
-    loadFallbackLogs();
+    // Check Firebase availability
+    if (typeof firebase !== 'undefined') {
+        console.log('Firebase is available');
+        
+        // Set up Firebase real-time listener
+        setupFirebaseListener();
+    } else {
+        console.warn('Firebase is NOT available - using local storage only');
+        loadFallbackLogs();
+    }
     
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('service-worker.js')
-            .then(reg => console.log('Service Worker registered', reg))
+            .then(reg => console.log('Service Worker registered'))
             .catch(err => console.log('Service Worker registration failed', err));
     }
+    
+    // Disable log button initially
+    logButton.disabled = true;
     
     // Set up midnight refresh
     setupMidnightRefresh();
     
-    // Disable log button initially
-    logButton.disabled = true;
+    console.log('App initialization complete');
 }
 
 // Generate a simple device ID
@@ -118,15 +128,14 @@ function logActivities() {
         activities: [...selectedActivities],
         timestamp: timestamp.getTime(),
         dateString: formatDateForStorage(timestamp),
-        deviceId: deviceId, // Add the device ID for tracking
-        id: 'log_' + timestamp.getTime() + '_' + Math.random().toString(36).substring(2, 9) // Unique ID
+        deviceId: deviceId,
+        id: 'log_' + timestamp.getTime() + '_' + Math.random().toString(36).substring(2, 9)
     };
     
-    // Save to Firebase - this will trigger the listener on all devices
-    saveLogToFirebase(logEntry);
+    console.log('Logging activity:', logEntry);
     
-    // Also save to local storage as a backup
-    saveFallbackLogs();
+    // Add to Firebase
+    saveLogToFirebase(logEntry);
     
     // Reset selection
     resetActivitySelection();
@@ -164,11 +173,10 @@ function updateLogsDisplay() {
         emptyStateElement.style.display = 'none';
         
         // Add each log entry
-        sortedLogs.forEach((log, index) => {
+        sortedLogs.forEach((log) => {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
-            logEntry.dataset.index = index;
-            logEntry.dataset.id = log.id || `log_${log.timestamp}_${index}`;
+            logEntry.dataset.id = log.id || '';
             
             const timePersonContainer = document.createElement('div');
             timePersonContainer.className = 'log-time-person';
@@ -210,163 +218,143 @@ function updateLogsDisplay() {
 
 // Delete a log entry
 function deleteLogEntry(logToDelete) {
+    console.log('Deleting log entry:', logToDelete);
+    
     // Remove from local array
-    todayLogs = todayLogs.filter(log => 
-        log.id !== logToDelete.id && 
-        !(log.timestamp === logToDelete.timestamp && log.person === logToDelete.person)
-    );
-    
-    // Delete from Firebase
-    if (typeof firebase !== 'undefined' && firebase.firestore) {
-        const db = firebase.firestore();
-        
-        // First try to find by ID
-        if (logToDelete.id) {
-            db.collection('pretzelLogs').where('id', '==', logToDelete.id)
-                .get()
-                .then(querySnapshot => {
-                    if (!querySnapshot.empty) {
-                        querySnapshot.forEach(doc => {
-                            doc.ref.delete()
-                                .then(() => console.log('Log deleted from Firebase by ID'))
-                                .catch(error => console.error('Error deleting log from Firebase:', error));
-                        });
-                    } else {
-                        // If not found by ID, try timestamp and person
-                        deleteByTimestampAndPerson(db, logToDelete);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error finding log to delete by ID:', error);
-                    deleteByTimestampAndPerson(db, logToDelete);
-                });
-        } else {
-            // If no ID, fall back to timestamp and person
-            deleteByTimestampAndPerson(db, logToDelete);
-        }
-    }
-    
-    // Always update local storage
-    saveFallbackLogs();
+    todayLogs = todayLogs.filter(log => log.id !== logToDelete.id);
     
     // Update UI
     updateLogsDisplay();
+    
+    // Update local storage
+    saveFallbackLogs();
+    
+    // Delete from Firebase
+    deleteFromFirebase(logToDelete);
 }
 
-// Helper function for deletion by timestamp and person
-function deleteByTimestampAndPerson(db, logToDelete) {
-    db.collection('pretzelLogs')
-        .where('timestamp', '==', logToDelete.timestamp)
-        .where('person', '==', logToDelete.person)
-        .get()
-        .then(querySnapshot => {
-            querySnapshot.forEach(doc => {
-                doc.ref.delete()
-                    .then(() => console.log('Log deleted from Firebase by timestamp/person'))
-                    .catch(error => console.error('Error deleting log from Firebase:', error));
-            });
-        })
-        .catch(error => console.error('Error finding log to delete by timestamp/person:', error));
-}
-
-// Set up Firebase real-time listener
-function setupFirebaseListener() {
-    if (typeof firebase !== 'undefined' && firebase.firestore) {
-        try {
-            const today = formatDateForStorage(new Date());
-            const db = firebase.firestore();
-            
-            // Cancel any existing listener
-            if (firebaseListener) {
-                firebaseListener();
-                firebaseListener = null;
-            }
-            
-            // Set up a real-time listener
-            firebaseListener = db.collection('pretzelLogs')
-                .where('dateString', '==', today)
-                .onSnapshot(snapshot => {
-                    console.log('Firebase update received');
-                    let logsChanged = false;
-                    
-                    // Handle added or modified documents
-                    snapshot.docChanges().forEach(change => {
-                        const docData = change.doc.data();
-                        
-                        if (change.type === 'added' || change.type === 'modified') {
-                            // Check if this log is already in our array
-                            const existingIndex = todayLogs.findIndex(log => 
-                                (log.id && log.id === docData.id) || 
-                                (log.timestamp === docData.timestamp && log.person === docData.person)
-                            );
-                            
-                            if (existingIndex === -1) {
-                                todayLogs.push(docData);
-                                logsChanged = true;
-                            } else if (change.type === 'modified') {
-                                todayLogs[existingIndex] = docData;
-                                logsChanged = true;
-                            }
-                        }
-                        
-                        if (change.type === 'removed') {
-                            // Remove from todayLogs if present
-                            const existingIndex = todayLogs.findIndex(log => 
-                                (log.id && log.id === docData.id) || 
-                                (log.timestamp === docData.timestamp && log.person === docData.person)
-                            );
-                            
-                            if (existingIndex !== -1) {
-                                todayLogs.splice(existingIndex, 1);
-                                logsChanged = true;
-                            }
-                        }
-                    });
-                    
-                    if (logsChanged) {
-                        // Update local storage with the latest data
-                        saveFallbackLogs();
-                        // Update UI
-                        updateLogsDisplay();
-                    }
-                }, error => {
-                    console.error('Firebase listener error:', error);
-                });
-                
-            console.log('Firebase real-time listener set up');
-        } catch (error) {
-            console.error('Error setting up Firebase listener:', error);
+// Firebase Realtime Database functions
+function saveLogToFirebase(logEntry) {
+    try {
+        console.log('Saving to Firebase Realtime Database...');
+        if (typeof firebase === 'undefined') {
+            console.warn('Firebase not available');
+            return;
         }
+        
+        // Get a reference to the logs location
+        const today = formatDateForStorage(new Date());
+        const database = firebase.database();
+        const logsRef = database.ref('logs/' + today);
+        
+        // Generate a unique key for this log
+        const newLogRef = logsRef.push();
+        
+        // Save the data
+        newLogRef.set(logEntry)
+            .then(() => {
+                console.log('Data saved successfully with key:', newLogRef.key);
+                // Store the Firebase key with the log entry
+                logEntry.firebaseKey = newLogRef.key;
+            })
+            .catch(error => {
+                console.error('Error saving data:', error);
+            });
+    } catch (error) {
+        console.error('Error in saveLogToFirebase:', error);
     }
 }
 
-// Firebase functions
-function saveLogToFirebase(logEntry) {
-    if (typeof firebase !== 'undefined' && firebase.firestore) {
-        try {
-            const db = firebase.firestore();
-            db.collection('pretzelLogs').add({
-                ...logEntry,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-                console.log('Log saved to Firebase successfully');
-                // Note: We don't need to update the UI here because the listener will do it
-            })
-            .catch(error => {
-                console.error('Error saving log to Firebase:', error);
+// Set up Firebase Realtime Database listener
+function setupFirebaseListener() {
+    try {
+        console.log('Setting up Firebase Realtime Database listener...');
+        const today = formatDateForStorage(new Date());
+        const database = firebase.database();
+        const logsRef = database.ref('logs/' + today);
+        
+        // Listen for data changes
+        logsRef.on('value', (snapshot) => {
+            console.log('Firebase update received');
+            
+            // Clear current logs
+            todayLogs = [];
+            
+            // Get all the data
+            const data = snapshot.val();
+            if (data) {
+                // Convert the object of objects to an array
+                Object.keys(data).forEach(key => {
+                    todayLogs.push({
+                        ...data[key],
+                        firebaseKey: key // Save the Firebase key for deletion
+                    });
+                });
+                
+                console.log('Loaded', todayLogs.length, 'logs from Firebase');
+                updateLogsDisplay();
+                saveFallbackLogs();
+            } else {
+                console.log('No data in Firebase');
+                updateLogsDisplay();
+            }
+        }, (error) => {
+            console.error('Firebase listener error:', error);
+        });
+            
+        console.log('Firebase listener set up for date:', today);
+    } catch (error) {
+        console.error('Error setting up Firebase listener:', error);
+    }
+}
+
+// Delete from Firebase Realtime Database
+function deleteFromFirebase(logToDelete) {
+    try {
+        if (typeof firebase === 'undefined') {
+            console.warn('Firebase not available');
+            return;
+        }
+        
+        const today = formatDateForStorage(new Date());
+        const database = firebase.database();
+        
+        // If we have a firebaseKey, use it for deletion
+        if (logToDelete.firebaseKey) {
+            console.log('Deleting from Firebase with key:', logToDelete.firebaseKey);
+            
+            const logRef = database.ref('logs/' + today + '/' + logToDelete.firebaseKey);
+            logRef.remove()
+                .then(() => {
+                    console.log('Successfully deleted from Firebase');
+                })
+                .catch(error => {
+                    console.error('Error deleting from Firebase:', error);
+                });
+        } 
+        // Otherwise try to find by ID
+        else if (logToDelete.id) {
+            console.log('Searching for log to delete by ID:', logToDelete.id);
+            
+            const logsRef = database.ref('logs/' + today);
+            logsRef.orderByChild('id').equalTo(logToDelete.id).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        childSnapshot.ref.remove()
+                            .then(() => {
+                                console.log('Successfully deleted from Firebase by ID');
+                            })
+                            .catch(error => {
+                                console.error('Error deleting from Firebase by ID:', error);
+                            });
+                    });
+                } else {
+                    console.warn('No matching log found in Firebase');
+                }
             });
-        } catch (error) {
-            console.error('Firebase error:', error);
         }
-    } else {
-        console.log('Firebase not available, using local storage only');
-        // If Firebase isn't available, we need to update the todayLogs array manually
-        // (this is normally handled by the listener)
-        if (!todayLogs.find(log => log.id === logEntry.id)) {
-            todayLogs.push(logEntry);
-            updateLogsDisplay();
-        }
+    } catch (error) {
+        console.error('Error in deleteFromFirebase:', error);
     }
 }
 
@@ -374,7 +362,7 @@ function saveLogToFirebase(logEntry) {
 function saveFallbackLogs() {
     const storageKey = 'pretzelLogs_' + formatDateForStorage(new Date());
     localStorage.setItem(storageKey, JSON.stringify(todayLogs));
-    console.log('Saved to local storage:', storageKey, todayLogs.length, 'entries');
+    console.log('Saved to local storage:', todayLogs.length, 'entries');
 }
 
 function loadFallbackLogs() {
@@ -383,7 +371,7 @@ function loadFallbackLogs() {
     if (saved) {
         try {
             todayLogs = JSON.parse(saved);
-            console.log('Loaded from local storage:', storageKey, todayLogs.length, 'entries');
+            console.log('Loaded from local storage:', todayLogs.length, 'entries');
             updateLogsDisplay();
         } catch (error) {
             console.error('Error parsing stored logs:', error);
@@ -409,11 +397,8 @@ function setupMidnightRefresh() {
             todayLogs = [];
             updateLogsDisplay();
             
-            // Set up new Firebase listener for the new day
+            // Set up a new Firebase listener for the new day
             setupFirebaseListener();
-            
-            // Load today's logs (which should be empty for a new day)
-            loadFallbackLogs();
         }
         
         // Schedule the next check
