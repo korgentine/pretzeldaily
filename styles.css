@@ -133,7 +133,7 @@ h1 {
 
 .log-entry {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 15px;
     position: relative;
 }
@@ -142,52 +142,90 @@ h1 {
     display: flex;
     flex-direction: column;
     margin-right: 15px;
-    width: 80px;
-}
-
-.log-time {
-    font-size: 18px;
-    color: #333;
+    width: 100px;
+    gap: 2px;
+    flex-shrink: 0;
 }
 
 .log-person {
-    font-size: 14px;
+    font-size: 16px;
     color: #888;
     text-transform: uppercase;
+    font-weight: bold;
+}
+
+.log-time {
+    font-size: 16px;
+    color: #333;
+    white-space: nowrap;
+}
+
+.log-time:hover {
+    color: #586AED;
+    text-decoration: underline;
+}
+
+.log-relative-time {
+    font-size: 11px;
+    color: #888;
+    text-transform: lowercase;
+    font-weight: normal;
+    white-space: nowrap;
 }
 
 .log-activities {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.activity-tile-container {
+    position: relative;
+    margin-right: 12px;
+    margin-bottom: 12px;
+}
+
+.activity-tile-container:hover .activity-delete-button {
+    opacity: 1;
 }
 
 .log-activity-icon {
-    width: 40px;
-    height: 40px;
-    margin-right: 15px;
+    width: 55px;
+    height: 55px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     background-color: white;
-    border-radius: 8px;
-    padding: 5px;
+    border-radius: 12px;
+    padding: 7px;
 }
 
-.delete-button {
-    background: transparent;
-    border: 1px solid #ddd;
+.activity-delete-button {
+    background: #ccc;
+    border: none;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     position: absolute;
-    right: 0;
-    color: #999;
-    font-size: 18px;
+    top: -5px;
+    right: -5px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0.6;
+    transition: opacity 0.2s ease, transform 0.2s ease;
     outline: none;
+    z-index: 10;
+}
+
+.activity-delete-button:hover {
+    background: #999;
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 /* Input section styles */
@@ -297,6 +335,111 @@ select {
     }
 }
 
+/* Modal styles */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    padding: 0;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 30px 20px 30px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-title {
+    color: #586AED;
+    font-size: 20px;
+    font-family: 'Krona One', sans-serif;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #ccc;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.modal-close:hover {
+    background-color: #f5f5f5;
+    color: #999;
+}
+
+.modal-body {
+    padding: 30px;
+    text-align: center;
+}
+
+.time-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #f0f0f0;
+    border-radius: 10px;
+    font-size: 24px;
+    font-family: 'Krona One', sans-serif;
+    text-align: center;
+    color: #333;
+    background-color: #f9f9f9;
+    outline: none;
+}
+
+.time-input:focus {
+    border-color: #586AED;
+    background-color: white;
+}
+
+.modal-footer {
+    padding: 20px 30px 30px 30px;
+}
+
+.modal-save-button {
+    width: 100%;
+    padding: 15px;
+    background-color: #586AED;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-family: 'Krona One', sans-serif;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.modal-save-button:hover {
+    background-color: #4a5cd4;
+}
+
 /* Media queries for smaller screens */
 @media (max-width: 400px) {
     .activity-icon {
@@ -306,5 +449,53 @@ select {
     
     .activity-button span {
         font-size: 12px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .modal-header {
+        padding: 20px 20px 15px 20px;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-footer {
+        padding: 15px 20px 20px 20px;
+    }
+    
+    .modal-title {
+        font-size: 18px;
+    }
+    
+    .time-input {
+        font-size: 20px;
+    }
+    
+    .log-time-person {
+        width: 90px;
+        margin-right: 12px;
+    }
+    
+    .log-time {
+        font-size: 15px;
+    }
+    
+    .log-relative-time {
+        font-size: 10px;
+    }
+    
+    .activity-tile-container {
+        margin-right: 12px;
+    }
+    
+    .log-activity-icon {
+        width: 50px;
+        height: 50px;
+        padding: 6px;
     }
 }
