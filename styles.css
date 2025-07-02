@@ -22,16 +22,27 @@ body {
 
 /* Header styles */
 header {
-    text-align: center;
-    padding: 20px 0;
+    text-align: left;
+    padding: 20px 20px 0 20px;
     position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 h1 {
     color: #555;
-    font-size: 28px;
+    font-size: 24px;
     letter-spacing: 1px;
     margin-bottom: 10px;
+    margin: 0;
+}
+
+.header-decorations {
+    text-align: center;
+    position: relative;
+    padding-bottom: 10px;
+    padding-top: 20px;
 }
 
 .heart {
@@ -41,7 +52,7 @@ h1 {
     background-color: #ff6b81;
     transform: rotate(-45deg);
     left: 25%;
-    top: 90px;
+    top: 40px;
 }
 
 .heart:before,
@@ -74,6 +85,27 @@ h1 {
     position: relative;
     z-index: 1;
     margin-bottom: -30px;
+}
+
+.settings-gear {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0.7;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    padding: 5px;
+    border-radius: 50%;
+    background-image: url('images/gear.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.settings-gear:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Content styles */
@@ -118,8 +150,7 @@ h1 {
 
 .activities-log {
     border-top: 1px solid #586AED;
-    border-bottom: 1px solid #586AED;
-    padding: 15px 0;
+    padding: 15px 0 5px 0;
     min-height: 60px;
     transition: all 0.3s ease;
 }
@@ -134,7 +165,7 @@ h1 {
 .log-entry {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     position: relative;
 }
 
@@ -230,33 +261,15 @@ h1 {
 
 /* Input section styles */
 .input-section {
-    margin-top: 15px;
-}
-
-.person-selector {
-    margin-bottom: 15px;
-}
-
-select {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 5px;
-    background-color: #fff;
-    color: #333;
-    font-size: 16px;
-    text-transform: uppercase;
-    font-family: 'Krona One', sans-serif;
-    appearance: none;
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%23586AED" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
-    background-repeat: no-repeat;
-    background-position: right 10px center;
+    margin-top: 5px;
+    border-top: 1px solid #586AED;
+    padding-top: 10px;
 }
 
 .activity-buttons {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .activity-button {
@@ -438,6 +451,30 @@ select {
 
 .modal-save-button:hover {
     background-color: #4a5cd4;
+}
+
+/* User selection modal specific styles */
+.user-select {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #f0f0f0;
+    border-radius: 10px;
+    font-size: 20px;
+    font-family: 'Krona One', sans-serif;
+    text-align: center;
+    color: #333;
+    background-color: #f9f9f9;
+    outline: none;
+    text-transform: uppercase;
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23586AED" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+}
+
+.user-select:focus {
+    border-color: #586AED;
+    background-color: white;
 }
 
 /* Media queries for smaller screens */

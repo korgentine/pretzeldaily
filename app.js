@@ -2,7 +2,7 @@
 const dateElement = document.getElementById('date');
 const activitiesLogElement = document.getElementById('activities-log');
 const emptyStateElement = document.getElementById('empty-state');
-const personSelectElement = document.getElementById('person-select');
+const settingsGearElement = document.getElementById('settings-gear');
 const activityButtons = document.querySelectorAll('.activity-button');
 const logButton = document.getElementById('log-button');
 
@@ -11,6 +11,7 @@ let selectedActivities = [];
 let todayLogs = [];
 let currentDate = new Date();
 let deviceId = null;
+let currentSelectedPerson = 'ALE'; // Default person
 
 // Activity icons for logs
 const activityIcons = {
@@ -39,7 +40,7 @@ function init() {
     // Load the person preference from local storage
     const savedPerson = localStorage.getItem(`${deviceId}_selectedPerson`);
     if (savedPerson) {
-        personSelectElement.value = savedPerson;
+        currentSelectedPerson = savedPerson;
     }
     
     // Set up activity button clicks
@@ -52,10 +53,8 @@ function init() {
     // Set up the log button
     logButton.addEventListener('click', logActivities);
     
-    // Save person selection to local storage
-    personSelectElement.addEventListener('change', () => {
-        localStorage.setItem(`${deviceId}_selectedPerson`, personSelectElement.value);
-    });
+    // Set up the settings gear click
+    settingsGearElement.addEventListener('click', openUserSelectionModal);
     
     // Check Firebase availability
     if (typeof firebase !== 'undefined') {
@@ -119,7 +118,7 @@ function toggleActivity(button) {
 function logActivities() {
     if (selectedActivities.length === 0) return;
     
-    const person = personSelectElement.value;
+    const person = currentSelectedPerson;
     const timestamp = new Date();
     // Convert to 12-hour format with AM/PM
     const hours = timestamp.getHours();
@@ -772,6 +771,93 @@ function saveEditedTime(logEntry, newTime) {
     
     // Close modal
     closeEditTimeModal();
+}
+
+// Open user selection modal
+function openUserSelectionModal() {
+    // Create modal backdrop
+    const modalBackdrop = document.createElement('div');
+    modalBackdrop.className = 'modal-backdrop';
+    
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    
+    // Modal header
+    const modalHeader = document.createElement('div');
+    modalHeader.className = 'modal-header';
+    
+    const modalTitle = document.createElement('h2');
+    modalTitle.textContent = 'USER';
+    modalTitle.className = 'modal-title';
+    
+    const closeButton = document.createElement('button');
+    closeButton.className = 'modal-close';
+    closeButton.innerHTML = '&times;';
+    closeButton.addEventListener('click', closeUserSelectionModal);
+    
+    modalHeader.appendChild(modalTitle);
+    modalHeader.appendChild(closeButton);
+    
+    // Modal body
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+    
+    const userSelect = document.createElement('select');
+    userSelect.className = 'user-select';
+    userSelect.innerHTML = `
+        <option value="ALE">ALE</option>
+        <option value="DENU">DENU</option>
+    `;
+    userSelect.value = currentSelectedPerson;
+    
+    modalBody.appendChild(userSelect);
+    
+    // Modal footer
+    const modalFooter = document.createElement('div');
+    modalFooter.className = 'modal-footer';
+    
+    const saveButton = document.createElement('button');
+    saveButton.className = 'modal-save-button';
+    saveButton.textContent = 'SAVE';
+    saveButton.addEventListener('click', () => saveUserSelection(userSelect.value));
+    
+    modalFooter.appendChild(saveButton);
+    
+    // Assemble modal
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalContent.appendChild(modalFooter);
+    modalBackdrop.appendChild(modalContent);
+    
+    // Add to DOM
+    document.body.appendChild(modalBackdrop);
+    
+    // Focus on select
+    setTimeout(() => userSelect.focus(), 100);
+    
+    // Close on backdrop click
+    modalBackdrop.addEventListener('click', (e) => {
+        if (e.target === modalBackdrop) {
+            closeUserSelectionModal();
+        }
+    });
+}
+
+// Close user selection modal
+function closeUserSelectionModal() {
+    const modalBackdrop = document.querySelector('.modal-backdrop');
+    if (modalBackdrop) {
+        modalBackdrop.remove();
+    }
+}
+
+// Save user selection
+function saveUserSelection(selectedUser) {
+    currentSelectedPerson = selectedUser;
+    localStorage.setItem(`${deviceId}_selectedPerson`, selectedUser);
+    console.log('User selection saved:', selectedUser);
+    closeUserSelectionModal();
 }
 
 // Initialize the app when DOM is loaded
