@@ -1,0 +1,12 @@
+{
+  "name": "pretzeldaily",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pretzel's Day — pee-reminder cron + static PWA",
+  "scripts": {
+    "sanity": "node scripts/sanity.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

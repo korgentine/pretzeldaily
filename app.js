@@ -59,9 +59,12 @@ function init() {
     // Check Firebase availability
     if (typeof firebase !== 'undefined') {
         console.log('Firebase is available');
-        
+
         // Set up Firebase real-time listener
         setupFirebaseListener();
+
+        // Report the current device's timezone so the reminder cron uses it
+        reportTimezoneToFirebase();
     } else {
         console.warn('Firebase is NOT available - using local storage only');
         loadFallbackLogs();
@@ -69,7 +72,7 @@ function init() {
     
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js?v=20260511b')
+        navigator.serviceWorker.register('service-worker.js?v=20260511e')
             .then(reg => console.log('Service Worker registered'))
             .catch(err => console.log('Service Worker registration failed', err));
     }
@@ -531,6 +534,40 @@ function deleteFromFirebase(logToDelete) {
     }
 }
 
+// Push the current device's IANA timezone to Firebase so the reminder cron
+// uses the same 5am-9pm window as wherever the app is being opened from.
+function reportTimezoneToFirebase() {
+    try {
+        if (typeof firebase === 'undefined') return;
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (!tz) return;
+        firebase.database().ref('settings').update({
+            timezone: tz,
+            timezoneUpdatedBy: deviceId,
+            timezoneUpdatedAt: new Date().toISOString(),
+        }).catch(err => console.warn('Failed to report timezone:', err));
+    } catch (err) {
+        console.warn('reportTimezoneToFirebase error:', err);
+    }
+}
+
+// Read the shared reminders-enabled flag (returns a Promise<boolean>).
+function readRemindersEnabled() {
+    if (typeof firebase === 'undefined') return Promise.resolve(false);
+    return firebase.database().ref('settings/remindersEnabled').once('value')
+        .then(snap => Boolean(snap.val()))
+        .catch(err => {
+            console.warn('Failed to read remindersEnabled:', err);
+            return false;
+        });
+}
+
+function writeRemindersEnabled(value) {
+    if (typeof firebase === 'undefined') return Promise.resolve();
+    return firebase.database().ref('settings/remindersEnabled').set(Boolean(value))
+        .catch(err => console.warn('Failed to write remindersEnabled:', err));
+}
+
 // Local storage fallback functions
 function saveFallbackLogs() {
     const storageKey = 'pretzelLogs_' + formatDateForStorage(new Date());
@@ -846,17 +883,41 @@ function openUserSelectionModal() {
         <option value="DENU">DENU</option>
     `;
     userSelect.value = currentSelectedPerson;
-    
+
     modalBody.appendChild(userSelect);
-    
+
+    // Pee reminders toggle (shared between both users via Firebase)
+    const reminderRow = document.createElement('label');
+    reminderRow.className = 'reminder-toggle-row';
+    reminderRow.innerHTML = `
+        <div class="reminder-toggle-text">
+            <div class="reminder-toggle-title">PEE REMINDERS</div>
+            <div class="reminder-toggle-sub">Ping us if Pretzel hasn't peed in 8h during 5am&ndash;9pm</div>
+        </div>
+        <span class="reminder-toggle-switch">
+            <input type="checkbox" class="reminder-toggle-input" disabled>
+            <span class="reminder-toggle-slider"></span>
+        </span>
+    `;
+    const reminderCheckbox = reminderRow.querySelector('.reminder-toggle-input');
+    modalBody.appendChild(reminderRow);
+
+    readRemindersEnabled().then(enabled => {
+        reminderCheckbox.checked = enabled;
+        reminderCheckbox.disabled = (typeof firebase === 'undefined');
+    });
+
     // Modal footer
     const modalFooter = document.createElement('div');
     modalFooter.className = 'modal-footer';
-    
+
     const saveButton = document.createElement('button');
     saveButton.className = 'modal-save-button';
     saveButton.textContent = 'SAVE';
-    saveButton.addEventListener('click', () => saveUserSelection(userSelect.value));
+    saveButton.addEventListener('click', () => {
+        writeRemindersEnabled(reminderCheckbox.checked);
+        saveUserSelection(userSelect.value);
+    });
     
     modalFooter.appendChild(saveButton);
     
