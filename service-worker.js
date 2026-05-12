@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pretzeldaily-app-v1';
+const CACHE_NAME = 'pretzeldaily-app-v2';
 const urlsToCache = [
   './',
   './index.html',
