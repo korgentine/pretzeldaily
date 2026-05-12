@@ -69,7 +69,7 @@ function init() {
     
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
+        navigator.serviceWorker.register('service-worker.js?v=20260511b')
             .then(reg => console.log('Service Worker registered'))
             .catch(err => console.log('Service Worker registration failed', err));
     }

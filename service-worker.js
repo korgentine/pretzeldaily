@@ -1,10 +1,10 @@
-const CACHE_NAME = 'pretzeldaily-app-v2';
+const CACHE_NAME = 'pretzeldaily-app-v3';
 const urlsToCache = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
-  './firebase-config.js',
+  './styles.css?v=20260511b',
+  './app.js?v=20260511b',
+  './firebase-config.js?v=20260511b',
   './images/pretzel.png',
   './images/ate.png',
   './images/peed.png',
