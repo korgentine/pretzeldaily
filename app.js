@@ -635,16 +635,22 @@ function openEditTimeModal(logEntry) {
     modalBody.className = 'modal-body';
     
     const currentTime = logEntry.time.replace('~', '').trim();
+    const timeField = document.createElement('button');
+    timeField.type = 'button';
+    timeField.className = 'time-picker-field';
+
+    const timeDisplay = document.createElement('span');
+    timeDisplay.className = 'time-display';
+    timeDisplay.textContent = ensureTimeFormat(currentTime);
+
     const timeInput = document.createElement('input');
-    timeInput.type = 'text';
-    timeInput.className = 'time-text-input';
-    timeInput.value = ensureTimeFormat(currentTime);
-    timeInput.placeholder = '6:30 PM';
-    timeInput.autocomplete = 'off';
-    timeInput.autocapitalize = 'characters';
-    timeInput.spellcheck = false;
+    timeInput.type = 'time';
+    timeInput.className = 'native-time-input';
+    timeInput.value = convertTo24Hour(currentTime);
     
-    modalBody.appendChild(timeInput);
+    timeField.appendChild(timeDisplay);
+    timeField.appendChild(timeInput);
+    modalBody.appendChild(timeField);
     
     // Modal footer
     const modalFooter = document.createElement('div');
@@ -654,16 +660,13 @@ function openEditTimeModal(logEntry) {
     saveButton.className = 'modal-save-button';
     saveButton.textContent = 'SAVE';
     saveButton.addEventListener('click', () => {
-        const normalizedTime = normalizeEditedTimeInput(timeInput.value);
-        if (!normalizedTime) {
-            timeInput.classList.add('invalid');
-            timeInput.focus();
-            timeInput.select();
+        if (!timeInput.value) {
+            timeField.classList.add('invalid');
             return;
         }
 
-        timeInput.classList.remove('invalid');
-        saveEditedTime(logEntry, normalizedTime);
+        timeField.classList.remove('invalid');
+        saveEditedTime(logEntry, timeInput.value);
     });
     
     modalFooter.appendChild(saveButton);
@@ -677,21 +680,27 @@ function openEditTimeModal(logEntry) {
     // Add to DOM
     document.body.appendChild(modalBackdrop);
     
-    timeInput.addEventListener('input', () => {
-        timeInput.classList.remove('invalid');
-    });
-
-    timeInput.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-            saveButton.click();
+    timeField.addEventListener('click', () => {
+        timeField.classList.remove('invalid');
+        if (typeof timeInput.showPicker === 'function') {
+            timeInput.showPicker();
+        } else {
+            timeInput.focus();
+            timeInput.click();
         }
     });
 
-    // Focus on time input
-    setTimeout(() => {
-        timeInput.focus();
-        timeInput.select();
-    }, 100);
+    const syncTimeDisplay = () => {
+        if (!timeInput.value) return;
+        timeDisplay.textContent = convertTo12Hour(timeInput.value);
+    };
+
+    timeInput.addEventListener('input', () => {
+        timeField.classList.remove('invalid');
+        syncTimeDisplay();
+    });
+
+    timeInput.addEventListener('change', syncTimeDisplay);
     
     // Close on backdrop click
     modalBackdrop.addEventListener('click', (e) => {
@@ -699,34 +708,6 @@ function openEditTimeModal(logEntry) {
             closeEditTimeModal();
         }
     });
-}
-
-function normalizeEditedTimeInput(inputValue) {
-    const trimmedValue = inputValue.trim().toUpperCase().replace(/\s+/g, ' ');
-    if (!trimmedValue) {
-        return null;
-    }
-
-    if (/^\d{1,2}:\d{2}$/.test(trimmedValue)) {
-        const [hours, minutes] = trimmedValue.split(':').map(Number);
-        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        }
-        return null;
-    }
-
-    const match = trimmedValue.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/);
-    if (!match) {
-        return null;
-    }
-
-    const hours = Number(match[1]);
-    const minutes = Number(match[2]);
-    if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
-        return null;
-    }
-
-    return convertTo24Hour(`${hours}:${match[2]} ${match[3]}`);
 }
 
 // Close edit time modal

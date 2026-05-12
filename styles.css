@@ -420,29 +420,54 @@ h1 {
     text-align: center;
 }
 
-.time-text-input {
+.time-picker-field {
     width: 100%;
     min-height: 96px;
     padding: 0 20px;
     border: 2px solid #586AED;
     border-radius: 18px;
+    background-color: white;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.time-display {
+    width: 100%;
     color: #333;
     font-family: 'Krona One', sans-serif;
     font-size: clamp(24px, 5vw, 34px);
     line-height: 1;
     text-align: center;
-    background-color: white;
-    outline: none;
+}
+
+.native-time-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.015;
+    border: none;
+    background: transparent;
+    color: transparent;
+    cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
 }
 
-.time-text-input::placeholder {
-    color: #b8bee9;
+.native-time-input::-webkit-date-and-time-value,
+.native-time-input::-webkit-datetime-edit,
+.native-time-input::-webkit-datetime-edit-fields-wrapper {
+    color: transparent;
 }
 
-.time-text-input.invalid {
+.time-picker-field.invalid {
     border-color: #d94d68;
+}
+
+.time-picker-field.invalid .time-display {
     color: #d94d68;
 }
 
@@ -524,9 +549,12 @@ h1 {
         font-size: 18px;
     }
     
-    .time-text-input {
-        font-size: 20px;
+    .time-picker-field {
         min-height: 88px;
+    }
+
+    .time-display {
+        font-size: 20px;
     }
     
     .log-time-person {
