@@ -634,14 +634,11 @@ function openEditTimeModal(logEntry) {
     const modalBody = document.createElement('div');
     modalBody.className = 'modal-body';
     
-    const timeInput = document.createElement('input');
-    timeInput.type = 'time';
-    timeInput.className = 'time-input';
-    // Convert from 12-hour to 24-hour format for the input
     const currentTime = logEntry.time.replace('~', '').trim();
-    timeInput.value = convertTo24Hour(currentTime);
+    const timeParts = getTimePartsForEditor(currentTime);
+    const timeEditor = buildTimeEditor(timeParts);
     
-    modalBody.appendChild(timeInput);
+    modalBody.appendChild(timeEditor.container);
     
     // Modal footer
     const modalFooter = document.createElement('div');
@@ -650,7 +647,10 @@ function openEditTimeModal(logEntry) {
     const saveButton = document.createElement('button');
     saveButton.className = 'modal-save-button';
     saveButton.textContent = 'SAVE';
-    saveButton.addEventListener('click', () => saveEditedTime(logEntry, timeInput.value));
+    saveButton.addEventListener('click', () => {
+        const editedTime = `${timeEditor.hourSelect.value}:${timeEditor.minuteSelect.value} ${timeEditor.periodSelect.value}`;
+        saveEditedTime(logEntry, convertTo24Hour(editedTime));
+    });
     
     modalFooter.appendChild(saveButton);
     
@@ -663,8 +663,8 @@ function openEditTimeModal(logEntry) {
     // Add to DOM
     document.body.appendChild(modalBackdrop);
     
-    // Focus on time input
-    setTimeout(() => timeInput.focus(), 100);
+    // Focus on hour select
+    setTimeout(() => timeEditor.hourSelect.focus(), 100);
     
     // Close on backdrop click
     modalBackdrop.addEventListener('click', (e) => {
@@ -672,6 +672,63 @@ function openEditTimeModal(logEntry) {
             closeEditTimeModal();
         }
     });
+}
+
+function buildTimeEditor(timeParts) {
+    const container = document.createElement('div');
+    container.className = 'time-editor';
+
+    const hourSelect = createTimeSelect('time-select time-select-hour', 12, value => value.toString(), timeParts.hour.toString());
+    const minuteSelect = createTimeSelect('time-select time-select-minute', 60, value => value.toString().padStart(2, '0'), timeParts.minute.toString().padStart(2, '0'));
+
+    const separator = document.createElement('span');
+    separator.className = 'time-separator';
+    separator.textContent = ':';
+
+    const periodSelect = document.createElement('select');
+    periodSelect.className = 'time-select time-select-period';
+    ['AM', 'PM'].forEach(period => {
+        const option = document.createElement('option');
+        option.value = period;
+        option.textContent = period;
+        periodSelect.appendChild(option);
+    });
+    periodSelect.value = timeParts.period;
+
+    container.appendChild(hourSelect);
+    container.appendChild(separator);
+    container.appendChild(minuteSelect);
+    container.appendChild(periodSelect);
+
+    return { container, hourSelect, minuteSelect, periodSelect };
+}
+
+function createTimeSelect(className, count, formatter, selectedValue) {
+    const select = document.createElement('select');
+    select.className = className;
+
+    for (let i = 0; i < count; i++) {
+        const option = document.createElement('option');
+        const value = formatter(i === 0 && count === 12 ? 12 : i);
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+    }
+
+    select.value = selectedValue;
+    return select;
+}
+
+function getTimePartsForEditor(timeString) {
+    const normalizedTime = ensureTimeFormat(timeString);
+    const [time, period] = normalizedTime.split(' ');
+    const [hour, minute] = time.split(':');
+
+    return {
+        hour: Number(hour),
+        minute: Number(minute),
+        period
+    };
 }
 
 // Close edit time modal
