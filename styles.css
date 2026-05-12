@@ -420,50 +420,30 @@ h1 {
     text-align: center;
 }
 
-.time-editor {
+.time-text-input {
     width: 100%;
-    min-height: 112px;
-    padding: 18px 20px;
+    min-height: 96px;
+    padding: 0 20px;
     border: 2px solid #586AED;
     border-radius: 18px;
-    background-color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-}
-
-.time-select {
-    border: none;
-    background: transparent;
     color: #333;
     font-family: 'Krona One', sans-serif;
     font-size: clamp(24px, 5vw, 34px);
     line-height: 1;
     text-align: center;
+    background-color: white;
     outline: none;
     appearance: none;
     -webkit-appearance: none;
-    min-width: 0;
 }
 
-.time-select-hour {
-    width: 1.9em;
+.time-text-input::placeholder {
+    color: #b8bee9;
 }
 
-.time-select-minute {
-    width: 2.3em;
-}
-
-.time-select-period {
-    width: 2.7em;
-    color: #586AED;
-}
-
-.time-separator {
-    color: #333;
-    font-size: clamp(24px, 5vw, 34px);
-    line-height: 1;
+.time-text-input.invalid {
+    border-color: #d94d68;
+    color: #d94d68;
 }
 
 .modal-footer {
@@ -544,15 +524,9 @@ h1 {
         font-size: 18px;
     }
     
-    .time-editor {
-        min-height: 96px;
-        padding: 16px;
-        gap: 8px;
-    }
-
-    .time-select,
-    .time-separator {
+    .time-text-input {
         font-size: 20px;
+        min-height: 88px;
     }
     
     .log-time-person {

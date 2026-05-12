@@ -635,10 +635,16 @@ function openEditTimeModal(logEntry) {
     modalBody.className = 'modal-body';
     
     const currentTime = logEntry.time.replace('~', '').trim();
-    const timeParts = getTimePartsForEditor(currentTime);
-    const timeEditor = buildTimeEditor(timeParts);
+    const timeInput = document.createElement('input');
+    timeInput.type = 'text';
+    timeInput.className = 'time-text-input';
+    timeInput.value = ensureTimeFormat(currentTime);
+    timeInput.placeholder = '6:30 PM';
+    timeInput.autocomplete = 'off';
+    timeInput.autocapitalize = 'characters';
+    timeInput.spellcheck = false;
     
-    modalBody.appendChild(timeEditor.container);
+    modalBody.appendChild(timeInput);
     
     // Modal footer
     const modalFooter = document.createElement('div');
@@ -648,8 +654,16 @@ function openEditTimeModal(logEntry) {
     saveButton.className = 'modal-save-button';
     saveButton.textContent = 'SAVE';
     saveButton.addEventListener('click', () => {
-        const editedTime = `${timeEditor.hourSelect.value}:${timeEditor.minuteSelect.value} ${timeEditor.periodSelect.value}`;
-        saveEditedTime(logEntry, convertTo24Hour(editedTime));
+        const normalizedTime = normalizeEditedTimeInput(timeInput.value);
+        if (!normalizedTime) {
+            timeInput.classList.add('invalid');
+            timeInput.focus();
+            timeInput.select();
+            return;
+        }
+
+        timeInput.classList.remove('invalid');
+        saveEditedTime(logEntry, normalizedTime);
     });
     
     modalFooter.appendChild(saveButton);
@@ -663,8 +677,21 @@ function openEditTimeModal(logEntry) {
     // Add to DOM
     document.body.appendChild(modalBackdrop);
     
-    // Focus on hour select
-    setTimeout(() => timeEditor.hourSelect.focus(), 100);
+    timeInput.addEventListener('input', () => {
+        timeInput.classList.remove('invalid');
+    });
+
+    timeInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            saveButton.click();
+        }
+    });
+
+    // Focus on time input
+    setTimeout(() => {
+        timeInput.focus();
+        timeInput.select();
+    }, 100);
     
     // Close on backdrop click
     modalBackdrop.addEventListener('click', (e) => {
@@ -674,61 +701,32 @@ function openEditTimeModal(logEntry) {
     });
 }
 
-function buildTimeEditor(timeParts) {
-    const container = document.createElement('div');
-    container.className = 'time-editor';
-
-    const hourSelect = createTimeSelect('time-select time-select-hour', 12, value => value.toString(), timeParts.hour.toString());
-    const minuteSelect = createTimeSelect('time-select time-select-minute', 60, value => value.toString().padStart(2, '0'), timeParts.minute.toString().padStart(2, '0'));
-
-    const separator = document.createElement('span');
-    separator.className = 'time-separator';
-    separator.textContent = ':';
-
-    const periodSelect = document.createElement('select');
-    periodSelect.className = 'time-select time-select-period';
-    ['AM', 'PM'].forEach(period => {
-        const option = document.createElement('option');
-        option.value = period;
-        option.textContent = period;
-        periodSelect.appendChild(option);
-    });
-    periodSelect.value = timeParts.period;
-
-    container.appendChild(hourSelect);
-    container.appendChild(separator);
-    container.appendChild(minuteSelect);
-    container.appendChild(periodSelect);
-
-    return { container, hourSelect, minuteSelect, periodSelect };
-}
-
-function createTimeSelect(className, count, formatter, selectedValue) {
-    const select = document.createElement('select');
-    select.className = className;
-
-    for (let i = 0; i < count; i++) {
-        const option = document.createElement('option');
-        const value = formatter(i === 0 && count === 12 ? 12 : i);
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
+function normalizeEditedTimeInput(inputValue) {
+    const trimmedValue = inputValue.trim().toUpperCase().replace(/\s+/g, ' ');
+    if (!trimmedValue) {
+        return null;
     }
 
-    select.value = selectedValue;
-    return select;
-}
+    if (/^\d{1,2}:\d{2}$/.test(trimmedValue)) {
+        const [hours, minutes] = trimmedValue.split(':').map(Number);
+        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        return null;
+    }
 
-function getTimePartsForEditor(timeString) {
-    const normalizedTime = ensureTimeFormat(timeString);
-    const [time, period] = normalizedTime.split(' ');
-    const [hour, minute] = time.split(':');
+    const match = trimmedValue.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/);
+    if (!match) {
+        return null;
+    }
 
-    return {
-        hour: Number(hour),
-        minute: Number(minute),
-        period
-    };
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+        return null;
+    }
+
+    return convertTo24Hour(`${hours}:${match[2]} ${match[3]}`);
 }
 
 // Close edit time modal
