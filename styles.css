@@ -359,7 +359,12 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding:
+        max(20px, env(safe-area-inset-top))
+        16px
+        max(20px, env(safe-area-inset-bottom));
     z-index: 1000;
+    overflow-y: auto;
 }
 
 .modal-content {
@@ -370,6 +375,8 @@ h1 {
     padding: 0;
     position: relative;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-height: calc(100vh - 40px);
+    overflow: hidden;
 }
 
 .modal-header {
@@ -415,20 +422,43 @@ h1 {
 
 .time-input {
     width: 100%;
-    padding: 15px;
-    border: 2px solid #f0f0f0;
-    border-radius: 10px;
-    font-size: 24px;
+    min-height: 88px;
+    padding: 0 16px;
+    border: 2px solid #586AED;
+    border-radius: 18px;
+    font-size: clamp(22px, 5vw, 32px);
     font-family: 'Krona One', sans-serif;
     text-align: center;
     color: #333;
-    background-color: #f9f9f9;
+    background-color: white;
     outline: none;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .time-input:focus {
     border-color: #586AED;
     background-color: white;
+}
+
+.time-input::-webkit-date-and-time-value {
+    min-height: 88px;
+    text-align: center;
+}
+
+.time-input::-webkit-datetime-edit {
+    align-items: center;
+    display: inline-flex;
+    height: 88px;
+    justify-content: center;
+    padding: 0;
+}
+
+.time-input::-webkit-datetime-edit-fields-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
 }
 
 .modal-footer {
@@ -489,8 +519,8 @@ h1 {
     }
     
     .modal-content {
-        width: 95%;
-        margin: 20px;
+        width: 100%;
+        max-height: calc(100vh - 24px);
     }
     
     .modal-header {
